@@ -1,0 +1,51 @@
+version: '2'
+services:
+  php-cli:
+    volumes:
+      - ./../:/var/www/html:cached
+  nginx:
+    ports:
+      - ${NGINX_HOST_IP}:${NGINX_HOST_PORT}:80
+    volumes:
+      - ./../:/var/www/html:cached
+  php-fpm:
+    volumes:
+      - ./../:/var/www/html:cached
+  supervisor:
+    volumes:
+      - ./../:/var/www/html:cached
+  minio:
+    ports:
+      - ${MINIO_API_HOST_IP}:${MINIO_API_HOST_PORT}:9000
+      - ${MINIO_CONSOLE_HOST_IP}:${MINIO_CONSOLE_HOST_PORT}:9001
+  imaginary:
+    ports:
+      - ${IMAGINARY_HOST_IP}:${IMAGINARY_HOST_PORT}:9000
+  redis-webui:
+    image: erikdubbelboer/phpredisadmin:latest
+    environment:
+      - ADMIN_USER=${REDIS_WEBUI_USERNAME}
+      - ADMIN_PASS=${REDIS_WEBUI_PASSWORD}
+      - REDIS_1_HOST=redis
+      - REDIS_1_PORT=6379
+    ports:
+      - ${REDIS_WEBUI_HOST_IP}:${REDIS_WEBUI_HOST_POST}:80
+    depends_on:
+      - redis
+    links:
+      - redis
+    networks:
+      - local
+  phppgadmin:
+    image: tadaweb/phppgadmin:latest
+    environment:
+      - POSTGRESQL_DEFAULT_DB=${POSTGRES_DB}
+      - POSTGRESQL_HOSTS=postgres:5432
+    ports:
+      - ${PHP_PG_ADMIN_HOST_IP}:${PHP_PG_ADMIN_HOST_POST}:8060
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    networks:
+      - local
