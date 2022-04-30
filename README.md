@@ -92,6 +92,9 @@ Scripts:
 - stop.sh - script stops ran services
 - update.sh - script rebuild the services
 
+### Notes for local deployment
+When deployed locally, the source code of the project is mounted in a container. This allows you to work on a project in real time without reassembling services.
+
 #### Notes for production deployment.
 The product deployment differs from the local one in that Nginx, MinIO and Imaginary stops processing incoming requests coming to it through the port (stops listening to the host port).
 They start processing only the traffic coming from the load balancer. I use Traefik (https://traefik.io/traefik/) as a load balancer in the configuration of the hosts by labels.
