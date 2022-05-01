@@ -6,9 +6,6 @@ use Illuminate\Contracts\Validation\Rule;
 
 class InnUlRule implements Rule
 {
-	/**
-	 * @var string
-	 */
 	protected string $errorMessage;
 
 	/**
