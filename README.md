@@ -85,6 +85,125 @@ Fast HTTP microservice for high-level image processing. I use it to process cust
 
 Project repository: https://github.com/h2non/imaginary
 
+## Env files
+### Docker env (docker/.env)
+```angular2html
+COMPOSE_PROJECT_NAME=example-app # name of current project.
+TIMEZONE=Europe/Moscow # system time zone of the services
+OPTIMIZE_PUBLIC_IMAGES=true # flag for optimize public images (in public folder)
+
+### Nginx #################################################
+NGINX_HOST_IP=0.0.0.0 # binding ip address of nginx service
+NGINX_HOST_PORT=81 # binding port of nginx service
+NGINX_TRAEFIK_DOMAIN=example.com # Traefik label: public domain
+NGINX_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https # Traefik label: allowed protocols
+NGINX_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
+NGINX_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
+NGINX_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
+
+### PostgreSQL #################################################
+POSTGRES_HOST_IP=0.0.0.0 # binding ip address of PostgreSQL service
+POSTGRES_HOST_PORT=54321 # binding port of PostgreSQL service
+POSTGRES_DB=default # the database that will be created at the first launch
+POSTGRES_USER=default # user of default database
+POSTGRES_PASSWORD=secret # password of user
+
+### PHP Settings #################################################
+INSTALL_PHP_EXT_BCMATH=true # flag for install bcmath php extension
+INSTALL_PHP_EXT_PHPREDIS=true # flag for install redis php extension
+INSTALL_PHP_EXT_OPCACHE=true # flag for install opcache php extension
+INSTALL_PHP_EXT_IMAGEMAGICK=false # flag for install imagemagick php extension
+INSTALL_PHP_EXT_EXIF=false # flag for install exif php extension
+INSTALL_PHP_EXT_PCNTL=true  # flag for install pcntl php extension
+INSTALL_PHP_EXT_INTL=false  # flag for install intl php extension
+INSTALL_PHP_EXT_SOAP=false  # flag for install soap php extension
+INSTALL_PHP_EXT_PGSQL=true  # flag for install pgsql & pdo_pgsql php extensions
+INSTALL_PHP_EXT_MYSQL=false # flag for install pdo_mysql php extension
+INSTALL_PHP_EXT_GETTEXT=false # flag for install gettext php extension
+INSTALL_PHP_EXT_SOCKETS=false # flag for install sockets php extension
+INSTALL_PHP_EXT_MEMCACHED=true # flag for install memcached php extension
+
+### NodeJS Settings #################################################
+INSTALL_NODE=true  # flag for install NodeJS
+NODE_VERSION=node # version of installation NodeJS
+INSTALL_NPM_GULP=true # flag for install gulp
+INSTALL_NPM_BOWER=false # flag for install bower
+INSTALL_NPM_VUE_CLI=true # flag for install vue-cli
+INSTALL_NPM_ANGULAR_CLI=false # flag for install angular-cli
+NPM_REGISTRY= # custom NPM registry url
+NPM_FETCH_RETRIES=2 # npm config
+NPM_FETCH_RETRY_FACTOR=10 # npm config
+NPM_FETCH_RETRY_MINTIMEOUT=10000 # npm config
+NPM_FETCH_RETRY_MAXTIMEOUT=60000 # npm config
+NVM_NODEJS_ORG_MIRROR= # url of nodejs mirror
+
+### Minio Settings ###################################################
+MINIO_API_HOST_IP=0.0.0.0 # binding ip address of MinIO service
+MINIO_API_HOST_PORT=9000 # binding port of MinIO service
+MINIO_CONSOLE_HOST_IP=0.0.0.0 # binding ip address of MinIO Admin service
+MINIO_CONSOLE_HOST_PORT=9001 # binding port of MinIO Admin service
+MINIO_ROOT_USER=minioadmin # root user of MinIO Admin service
+MINIO_ROOT_PASSWORD=minioadmin # password of root user
+MINIO_ACCESS_KEY=laravel # user for integration with Laravel
+MINIO_SECRET_KEY= # secret key of user (64 random characters)
+MINIO_TRAEFIK_DOMAIN=minio.example.com # Traefik label: public domain
+MINIO_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https  # Traefik label: allowed protocols
+MINIO_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
+MINIO_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
+MINIO_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
+
+### Imaginary Settings ###############################################
+IMAGINARY_HOST_IP=0.0.0.0  # binding ip address of Imaginary service
+IMAGINARY_HOST_PORT=9002 # binding port of Imaginary service
+IMAGINARY_ALLOWED_ORIGINS=http://minio:9000/ # Allowed remote urls
+IMAGINARY_TRAEFIK_DOMAIN=imaginary.example.com # Traefik label: public domain
+IMAGINARY_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https # Traefik label: allowed protocols
+IMAGINARY_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
+IMAGINARY_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
+IMAGINARY_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
+
+### Redis WebUI Settings #############################################
+REDIS_WEBUI_HOST_IP=0.0.0.0 # binding ip address of Redis Web UI service
+REDIS_WEBUI_HOST_POST=9987 # binding port of Redis Web UI service
+REDIS_WEBUI_USERNAME=admin # user for access to Web UI
+REDIS_WEBUI_PASSWORD=admin # password of user
+
+### PHP PG Admin Settings ############################################
+PHP_PG_ADMIN_HOST_IP=0.0.0.0 # binding ip address of PHP Pg Admin service
+PHP_PG_ADMIN_HOST_POST=8060 # binding port of PHP Pg Admin service
+```
+
+### Laravel env (.env)
+```angular2html
+DB_CONNECTION=pgsql
+DB_HOST=postgres #internal link to docker service with PostgreSQL
+DB_PORT=5432
+DB_DATABASE=default # default database (defined in docker env in POSTGRES_DB variable)
+DB_USERNAME=default # default user (defined in docker env in POSTGRES_USER variable)
+DB_PASSWORD=secret # password of user (defined in docker env in POSTGRES_PASSWORD variable)
+
+CACHE_DRIVER=redis # store cache in redis
+FILESYSTEM_DRIVER=minio_private # minio private filesystem driver as default filesystem driver
+QUEUE_CONNECTION=redis # redis as default queue connection
+SESSION_DRIVER=redis # store sessions in redis
+
+MEMCACHED_HOST=memcached #internal link to docker service with Memcached
+
+REDIS_HOST=redis  # internal link to docker service with Redis
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MINIO_ACCESS_KEY_ID=laravel # MinIO user (defined in docker env in MINIO_ACCESS_KEY variable)
+MINIO_SECRET_ACCESS_KEY= # MinIO secret key (defined in docker env in MINIO_SECRET_KEY variable)
+MINIO_DEFAULT_REGION=us-east-1
+MINIO_USE_PATH_STYLE_ENDPOINT=true
+MINIO_ENDPOINT=http://minio:9000 # internal link to minio api webservice
+MINIO_BUCKET_PUBLIC=public
+MINIO_BUCKET_PUBLIC_URL=http://minio.example.com/public # public link to minio public bucket
+MINIO_BUCKET_PRIVATE=private
+MINIO_BUCKET_PRIVATE_URL=http://minio.example.com/private # public link to minio private bucket
+```
+
 ## Deployment
 This projects has 2 sets of deployment scripts:
 - for local deployment
