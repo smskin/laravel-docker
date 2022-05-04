@@ -1,9 +1,8 @@
 version: '2'
 services:
-    app:
+    platform:
         build:
-            context: './../'
-            dockerfile: ./docker/app/Dockerfile
+            context: ./platform
             args:
                 - TZ=${TIMEZONE}
                 - INSTALL_BCMATH=${INSTALL_PHP_EXT_BCMATH}
@@ -34,6 +33,18 @@ services:
                 - OPTIMIZE_PUBLIC_IMAGES=${OPTIMIZE_PUBLIC_IMAGES}
         profiles:
             - install
+    app:
+        build:
+            context: './../'
+            dockerfile: ./docker/app/Dockerfile
+            args:
+                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+                - INSTALL_NODE=${INSTALL_NODE}
+                - OPTIMIZE_PUBLIC_IMAGES=${OPTIMIZE_PUBLIC_IMAGES}
+        profiles:
+            - install
+        depends_on:
+            - platform
     php-cli:
         build:
             context: ./php-cli

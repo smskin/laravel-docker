@@ -6,7 +6,8 @@ git pull
 
 cd "${ROOT_FOLDER}/../../docker" || exit
 docker network create webproxy
-docker compose -f docker-compose.yml -f docker-compose.production.yml build app
+docker compose -f docker-compose.yml -f docker-compose.production.yml build platform
+docker compose -f docker-compose.yml -f docker-compose.production.yml build app --no-cache
 docker compose -f docker-compose.yml -f docker-compose.production.yml build
 docker compose -f docker-compose.yml -f docker-compose.production.yml up -d php-cli
 docker compose -f docker-compose.yml -f docker-compose.production.yml exec php-cli php artisan storage:link

@@ -5,7 +5,8 @@ cd "${ROOT_FOLDER}/.." || exit
 git pull
 
 cd "${ROOT_FOLDER}/../../docker" || exit
-docker compose -f docker-compose.yml -f docker-compose.local.yml build app
+docker compose -f docker-compose.yml -f docker-compose.local.yml build platform
+docker compose -f docker-compose.yml -f docker-compose.local.yml build app --no-cache
 docker compose -f docker-compose.yml -f docker-compose.local.yml build
 docker compose -f docker-compose.yml -f docker-compose.local.yml up -d php-cli
 docker compose -f docker-compose.yml -f docker-compose.local.yml exec php-cli php -d memory_limit=-1 /usr/local/bin/composer install --no-dev

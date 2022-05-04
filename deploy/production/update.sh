@@ -7,7 +7,8 @@ git reset --hard
 git pull
 
 cd "${ROOT_FOLDER}/../../docker" || exit
-docker compose -f docker-compose.yml -f docker-compose.production.yml build app
+docker compose -f docker-compose.yml -f docker-compose.production.yml build platform
+docker compose -f docker-compose.yml -f docker-compose.production.yml build app --no-cache
 docker compose -f docker-compose.yml -f docker-compose.production.yml build
 docker compose -f docker-compose.yml -f docker-compose.production.yml down
 docker compose -f docker-compose.yml -f docker-compose.production.yml up -d

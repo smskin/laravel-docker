@@ -1,5 +1,8 @@
 version: '2'
 services:
+  platform:
+    labels:
+      - traefik.enable=false
   app:
     labels:
       - traefik.enable=false
