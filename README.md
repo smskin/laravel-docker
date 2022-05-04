@@ -2,14 +2,20 @@
 This is production ready example of project based on Laravel framework and docker.
 
 ## Docker services
-### App (app)
-Base docker container, that on build copies source code, installs dependencies, builds js & css assets and optimize it for use in production.
+### Platform (platform)
+Base docker service with installed php extensions for using it's later. This service based on official php-fpm image.
 
 Building process has this steps:
 - Installing composer
 - Installing nodejs (if required, installation defines by INSTALL_NODE argument)
 - Installing php extensions (installation defines by INSTALL_PHP_EXT_* arguments)
 - Installing image optimizers (installation defines by OPTIMIZE_PUBLIC_IMAGES argument)
+
+### App (app)
+Base docker service, that on build copies source code, installs dependencies, builds js & css assets and optimize it for use in production.
+This service based on platform service.
+
+Building process has this steps:
 - Copying source code
 - Installing composer dependencies
 - Installing npm dependencies (if required, installation defines by INSTALL_NODE argument)
