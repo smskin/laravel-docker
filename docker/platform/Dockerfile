@@ -275,6 +275,17 @@ RUN if [ ${INSTALL_MEMCACHED} = true ]; then \
 ;fi
 
 ###########################################################################
+# Pecl Sync:
+###########################################################################
+
+ARG INSTALL_PECL_SYNC=false
+
+RUN if [ ${INSTALL_PECL_SYNC} = true ]; then \
+    pecl -q install sync && \
+    docker-php-ext-enable sync \
+;fi
+
+###########################################################################
 # Install image optimizators:
 ###########################################################################
 ARG OPTIMIZE_PUBLIC_IMAGES=false
