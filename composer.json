@@ -11,7 +11,8 @@
         "laravel/horizon": "^5.9",
         "laravel/sanctum": "^2.14.1",
         "laravel/tinker": "^2.7",
-        "league/flysystem-aws-s3-v3": "^3.0"
+        "league/flysystem-aws-s3-v3": "^3.0",
+        "smskin/laravel-support": "dev-main"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.12",

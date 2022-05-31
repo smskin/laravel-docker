@@ -2,9 +2,9 @@
 
 namespace App\Modules\ExampleModule;
 
-use App\Modules\Core\BaseModule;
 use App\Modules\ExampleModule\Controllers\CSomeController;
 use App\Modules\ExampleModule\Requests\RTestRequest;
+use SMSkin\LaravelSupport\BaseModule;
 
 class ExampleModule extends BaseModule
 {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "af867c2a4852bd28e08b4680453d0195",
+    "content-hash": "b164a7bcc579ea318dce8a6be2ad4b43",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3060,6 +3060,47 @@
                 }
             ],
             "time": "2022-03-27T21:42:02+00:00"
+        },
+        {
+            "name": "smskin/laravel-support",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/smskin/laravel-support.git",
+                "reference": "29f3087985aa4c5f12f4e906009b802a6491fb3c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/smskin/laravel-support/zipball/29f3087985aa4c5f12f4e906009b802a6491fb3c",
+                "reference": "29f3087985aa4c5f12f4e906009b802a6491fb3c",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^8 || ^9",
+                "php": "^8.1"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SMSkin\\LaravelSupport\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "SMSkin",
+                    "email": "serg@msoinvest.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Laravel support library",
+            "homepage": "https://github.com/smskin/laravel-support",
+            "support": {
+                "issues": "https://github.com/smskin/laravel-support/issues",
+                "source": "https://github.com/smskin/laravel-support/tree/main"
+            },
+            "time": "2022-05-31T16:12:09+00:00"
         },
         {
             "name": "symfony/console",
@@ -8682,7 +8723,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {
+        "smskin/laravel-support": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

@@ -2,14 +2,17 @@
 
 namespace App\Modules\Core\Helpers\Imaginary\Enums;
 
-use App\Modules\Core\BaseEnum;
-use App\Modules\Core\Models\EnumItem;
 use Illuminate\Support\Collection;
+use SMSkin\LaravelSupport\BaseEnum;
+use SMSkin\LaravelSupport\Models\EnumItem;
 
 class TypeEnum extends BaseEnum
 {
     public const WEBP = 'webp';
 
+    /**
+     * @return Collection<EnumItem>
+     */
     public static function items(): Collection
     {
         return collect(

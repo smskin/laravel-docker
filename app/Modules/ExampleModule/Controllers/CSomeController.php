@@ -2,10 +2,10 @@
 
 namespace App\Modules\ExampleModule\Controllers;
 
-use App\Modules\Core\BaseController;
-use App\Modules\Core\BaseRequest;
 use App\Modules\ExampleModule\Actions\SomeAction;
 use App\Modules\ExampleModule\Requests\RTestRequest;
+use SMSkin\LaravelSupport\BaseController;
+use SMSkin\LaravelSupport\BaseRequest;
 
 class CSomeController extends BaseController
 {

@@ -2,7 +2,7 @@
 
 namespace App\Modules\ExampleModule\Requests;
 
-use App\Modules\Core\BaseRequest;
+use SMSkin\LaravelSupport\BaseRequest;
 
 class RTestRequest extends BaseRequest
 {

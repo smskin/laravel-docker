@@ -2,9 +2,9 @@
 
 namespace App\Modules\ExampleModule\Actions;
 
-use App\Modules\Core\BaseAction;
-use App\Modules\Core\BaseRequest;
 use App\Modules\ExampleModule\Requests\RTestRequest;
+use SMSkin\LaravelSupport\BaseAction;
+use SMSkin\LaravelSupport\BaseRequest;
 
 class SomeAction extends BaseAction
 {
