@@ -5,6 +5,8 @@ services:
             context: ./platform
             args:
                 - TZ=${TIMEZONE}
+                - INSTALL_ZIP=${INSTALL_PHP_EXT_ZIP}
+                - INSTALL_GD=${INSTALL_PHP_EXT_GD}
                 - INSTALL_BCMATH=${INSTALL_PHP_EXT_BCMATH}
                 - INSTALL_PHPREDIS=${INSTALL_PHP_EXT_PHPREDIS}
                 - INSTALL_OPCACHE=${INSTALL_PHP_EXT_OPCACHE}
