@@ -91,6 +91,7 @@ Project repository: https://github.com/h2non/imaginary
 COMPOSE_PROJECT_NAME=example-app # name of current project.
 TIMEZONE=Europe/Moscow # system time zone of the services
 OPTIMIZE_PUBLIC_IMAGES=true # flag for optimize public images (in public folder)
+OPENSSL_ENABLE_GOST_SUPPORT=true # flag for enable OpenSSL GOST provider support
 
 ### Nginx #################################################
 NGINX_HOST_IP=0.0.0.0 # binding ip address of nginx service

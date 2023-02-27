@@ -34,6 +34,7 @@ services:
                 - NPM_FETCH_RETRY_MAXTIMEOUT=${NPM_FETCH_RETRY_MAXTIMEOUT}
                 - NVM_NODEJS_ORG_MIRROR=${NVM_NODEJS_ORG_MIRROR}
                 - OPTIMIZE_PUBLIC_IMAGES=${OPTIMIZE_PUBLIC_IMAGES}
+                - OPENSSL_ENABLE_GOST_SUPPORT=${OPENSSL_ENABLE_GOST_SUPPORT}
         profiles:
             - install
     app:

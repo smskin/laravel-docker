@@ -300,6 +300,28 @@ RUN if [ ${OPTIMIZE_PUBLIC_IMAGES} = true ]; then \
      apt-get install -y jpegoptim optipng \
 ;fi
 
+###########################################################################
+# Enable OpenSSL GOST Support:
+###########################################################################
+ARG OPENSSL_ENABLE_GOST_SUPPORT=false
+
+RUN if [ ${OPENSSL_ENABLE_GOST_SUPPORT} = true ]; then \
+    apt-get install -y libengine-gost-openssl1.1 && \
+    sed -i '20i openssl_conf = openssl_def' /etc/ssl/openssl.cnf && \
+    echo "" >>/etc/ssl/openssl.cnf && \
+    echo "[openssl_def]" >>/etc/ssl/openssl.cnf && \
+    echo "engines = engine_section" >>/etc/ssl/openssl.cnf && \
+    echo "" >>/etc/ssl/openssl.cnf && \
+    echo "[engine_section]" >>/etc/ssl/openssl.cnf && \
+    echo "gost = gost_section" >>/etc/ssl/openssl.cnf && \
+    echo "" >> /etc/ssl/openssl.cnf && \
+    echo "[gost_section]" >>/etc/ssl/openssl.cnf && \
+    echo "engine_id = gost" >>/etc/ssl/openssl.cnf && \
+    echo "dynamic_path = /usr/lib/aarch64-linux-gnu/engines-1.1/gost.so" >>/etc/ssl/openssl.cnf && \
+    echo "default_algorithms = ALL" >>/etc/ssl/openssl.cnf && \
+    echo "CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet" >>/etc/ssl/openssl.cnf \
+;fi
+
 #####################################
 #  Clean up APT:
 #####################################
