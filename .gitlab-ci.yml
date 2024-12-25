@@ -1,0 +1,46 @@
+stages:
+  - build
+  - update
+
+variables:
+  GIT_STRATEGY: none
+  GIT_DEPTH: 1
+  TIMEZONE: Europe/Moscow
+  CONTAINER_NAME_DELIMITER: "-"
+
+before_script:
+  - echo $(pwd)
+  - docker info
+  - docker compose version
+
+.cloneGitRepository: &clone-git-repository
+  - rm -rf $CI_PROJECT_ID
+  - git clone --depth ${GIT_DEPTH} --branch ${CI_COMMIT_REF_NAME} ${CI_REPOSITORY_URL} ${CI_PROJECT_ID}
+  - cd $CI_PROJECT_ID/docker
+
+.dropGitRepository: &drop-git-repository
+  - cd ../../
+  - rm -rf $CI_PROJECT_ID
+
+.stopContainers: &stop-containers
+  - docker stop `docker ps --no-trunc | grep project-${CI_PROJECT_ID}-  | awk '{ print $1}'` 2> /dev/null || true
+  - docker rm -f `docker ps -a --no-trunc | grep project-${CI_PROJECT_ID}-  | awk '{ print $1}'` 2> /dev/null || true
+
+Build:
+  stage: build
+  script:
+    - *clone-git-repository
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build platform
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build app
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build php-fpm nginx supervisor
+    - *drop-git-repository
+  when: manual
+
+Update:
+  stage: update
+  script:
+    - *clone-git-repository
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml exec php-fpm php artisan migrate --force
+    - *drop-git-repository
+  needs: [ "Build" ]

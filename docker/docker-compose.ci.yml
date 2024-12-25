@@ -1,0 +1,140 @@
+x-laravel-env: &laravel-env
+  APP_NAME: ${LARAVEL_APP_NAME}
+  APP_ENV: production
+  APP_KEY: ${LARAVEL_APP_KEY}
+  APP_DEBUG: true
+  APP_TIMEZONE: UTC
+  APP_URL: "https://${DOMAIN}"
+  APP_LOCALE: en
+  APP_FALLBACK_LOCALE: en
+  APP_FAKER_LOCALE: en_US
+  APP_MAINTENANCE_DRIVER: file
+  PHP_CLI_SERVER_WORKERS: 4
+  BCRYPT_ROUNDS: 12
+  LOG_CHANNEL: stack
+  LOG_STACK: single
+  LOG_DEPRECATIONS_CHANNEL: null
+  LOG_LEVEL: debug
+  DB_CONNECTION: ${LARAVEL_DB_CONNECTION}
+  DB_HOST: ${LARAVEL_DB_HOST}
+  DB_PORT: ${LARAVEL_DB_PORT}
+  DB_DATABASE: ${LARAVEL_DB_DATABASE}
+  DB_USERNAME: ${LARAVEL_DB_USERNAME}
+  DB_PASSWORD: ${LARAVEL_DB_PASSWORD}
+  SESSION_DRIVER: redis
+  SESSION_LIFETIME: 120
+  SESSION_ENCRYPT: false
+  SESSION_PATH: /
+  SESSION_DOMAIN: null
+  BROADCAST_CONNECTION: log
+  FILESYSTEM_DISK: local
+  QUEUE_CONNECTION: redis
+  CACHE_STORE: redis
+  CACHE_PREFIX:
+  MEMCACHED_HOST: 127.0.0.1
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PASSWORD: null
+  REDIS_PORT: 6379
+  MAIL_MAILER: log
+  MAIL_HOST: 127.0.0.1
+  MAIL_PORT: 2525
+  MAIL_USERNAME: null
+  MAIL_PASSWORD: null
+  MAIL_ENCRYPTION: null
+  MAIL_FROM_ADDRESS: "hello@example.com"
+  MAIL_FROM_NAME: ${LARAVEL_APP_NAME}
+  AWS_ACCESS_KEY_ID:
+  AWS_SECRET_ACCESS_KEY:
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_BUCKET:
+  AWS_USE_PATH_STYLE_ENDPOINT: false
+  VITE_APP_NAME: ${LARAVEL_APP_NAME}
+
+services:
+  platform:
+    container_name: project-${CI_PROJECT_ID}-platform
+    image: projects/${CI_PROJECT_ID}/platform:${CI_COMMIT_REF_NAME}
+    build:
+      args:
+        progress: plain
+    environment:
+      <<: *laravel-env
+    labels:
+      - traefik.enable=false
+  app:
+    container_name: project-${CI_PROJECT_ID}-app
+    image: projects/${CI_PROJECT_ID}/app:${CI_COMMIT_REF_NAME}
+    build:
+      args:
+        - PLATFORM_CONTAINER_NAME=projects/${CI_PROJECT_ID}/platform:${CI_COMMIT_REF_NAME}
+    environment:
+      <<: *laravel-env
+    labels:
+      - traefik.enable=false
+  php-fpm:
+    container_name: project-${CI_PROJECT_ID}-php-fpm
+    image: projects/${CI_PROJECT_ID}/php-fpm:${CI_COMMIT_REF_NAME}
+    build:
+      args:
+        - APP_CONTAINER_NAME=projects/${CI_PROJECT_ID}/app:${CI_COMMIT_REF_NAME}
+    restart: always
+    environment:
+      <<: *laravel-env
+    volumes:
+      - laravel-app:/var/www/html/storage/app
+      - laravel-log:/var/www/html/storage/logs
+    labels:
+      - traefik.enable=false
+  nginx:
+    container_name: project-${CI_PROJECT_ID}-nginx
+    image: projects/${CI_PROJECT_ID}/nginx:${CI_COMMIT_REF_NAME}
+    build:
+      args:
+        - APP_CONTAINER_NAME=projects/${CI_PROJECT_ID}/app:${CI_COMMIT_REF_NAME}
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.${CI_PROJECT_ID}.loadbalancer.server.port=80
+      - traefik.docker.network=traefik-net
+
+      - traefik.http.routers.${CI_PROJECT_ID}.entrypoints=web
+      - traefik.http.routers.${CI_PROJECT_ID}.rule=Host(`${DOMAIN}`)
+
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.entrypoints=websecure
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.tls=true
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.tls.certresolver=myresolver
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.service=${CI_PROJECT_ID}
+      - traefik.http.routers.${CI_PROJECT_ID}-secure.priority=2
+
+      - traefik.http.middlewares.${CI_PROJECT_ID}-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.${CI_PROJECT_ID}.middlewares=${CI_PROJECT_ID}-https-redirect
+    networks:
+        - traefik-net
+  supervisor:
+    container_name: project-${CI_PROJECT_ID}-supervisor
+    image: projects/${CI_PROJECT_ID}/supervisor:${CI_COMMIT_REF_NAME}
+    build:
+      args:
+        - APP_CONTAINER_NAME=projects/${CI_PROJECT_ID}/app:${CI_COMMIT_REF_NAME}
+        - PLATFORM_CONTAINER_NAME=projects/${CI_PROJECT_ID}/platform:${CI_COMMIT_REF_NAME}
+    restart: always
+    environment:
+      <<: *laravel-env
+    volumes:
+      - laravel-app:/var/www/html/storage/app
+      - laravel-log:/var/www/html/storage/logs
+    labels:
+      - traefik.enable=false
+  redis:
+    container_name: project-${CI_PROJECT_ID}-redis
+    restart: always
+    labels:
+      - traefik.enable=false
+volumes:
+  laravel-app:
+  laravel-log:
+networks:
+  traefik-net:
+    external: true

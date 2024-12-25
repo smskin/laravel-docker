@@ -1,264 +1,211 @@
-# Example of Laravel project for in docker deployment
-This is production ready example of project based on Laravel framework and docker.
+# About the Project
+This project provides a solution for containerizing a Laravel project.
 
-## Docker services
-### Platform (platform)
-Base docker service with installed php extensions for using it's later. This service based on official php-fpm image.
+The production environment is automatically configured in the Traefik load balancer.
 
-Building process has this steps:
-- Installing composer
-- Installing nodejs (if required, installation defines by INSTALL_NODE argument)
-- Installing php extensions (installation defines by INSTALL_PHP_EXT_* arguments)
-- Installing image optimizers (installation defines by OPTIMIZE_PUBLIC_IMAGES argument)
+Project Structure:
+- `./deploy` directory — contains bash scripts for deploying the environment without using CI.
+- `./docker` directory — contains Dockerfiles, configurations, and docker-compose files.
+- `.gitlab-ci.yml` file — used for implementing CI through GitLab.
 
-### App (app)
-Base docker service, that on build copies source code, installs dependencies, builds js & css assets and optimize it for use in production.
-This service based on platform service.
+## Environments
 
-Building process has this steps:
-- Copying source code
-- Installing composer dependencies
-- Installing npm dependencies (if required, installation defines by INSTALL_NODE argument)
-- Building css & js assets by webpack (if required, the process is regulated by the presence of INSTALL_NODE argument)
-- Optimizing jpeg & png images (stored in the public folder, the process is regulated by the presence of OPTIMIZE_PUBLIC_IMAGES argument)
-- Compressing public assets (css, js, eot, svg, ttf, woff, html) for reduce the load on the nginx server gzip module (ngx_http_gzip_static_module)
+### Local Environment
+This environment is used by developers for local development. In this deployment type, the project's filesystem will be mounted inside the container, which allows working on the project in an IDE without needing to rebuild the containers when files are changed.
 
-As a result, we get container with sources, installed dependencies, compressed and optimized assets for use it in future services.
+Two docker-compose files are used in the local deployment:
+- `docker-compose.yml`
+- `docker-compose.local.yml`
 
-### PHP CLI (php-cli)
-Command prompt for execute artisan commands, installs composer & npm dependencies, build js & css assets by webpack.
+The `docker-compose.local.yml` overrides the `docker-compose.yml` configuration.
 
-Building this service rewrites some default configs for optimize.
-This service based on app service (described before) and it updates  on base container rebuilds.
+Deployment is performed by running one of the bash scripts in the `./deploy/local` directory:
+- `bash.sh` -  starts the shell, allows running Artisan commands.
+- `install.sh` - initial environment setup.
+- `start.sh` - starts the environment in Daemon mode.
+- `stop.sh` - stops the environment running in Daemon mode.
 
-### PHP FPM (php-fpm)
-Service php-fpm for observe requests from nginx.
+The following services will be started during deployment:
+- `nginx` - HTTP server.
+- `php-fpm` - PHP-FPM server.
+- `supervisor` - is a service that allows running background processes.
+- `redis` - Redis server.
+- `postgres` - PostgreSQL server.
 
-Building this service rewrites some default configs for optimize.
-This service based on app service (described before) and it updates  on base container rebuilds.
+### Production Environment
+This environment is used for deployment on the server. In this deployment type, self-contained containers are built, not linked to the project's filesystem.
 
-### Nginx (nginx)
-Frontend service for processing incoming http requests.
+Two docker-compose files are used in the production deployment:
+- `docker-compose.yml`
+- `docker-compose.production.yml`
 
-Building this service rewrites some default configs for optimize.
-Important changes in config:
-- Configured expires headers (ETag, Cache-Control, Expires)
-- Activated gzip for compress assets
+Two volumes are created in the environment:
+- `laravel-app` (for the `./storage/app` directory) -  allows sharing the storage filesystem between running containers.
+- `laravel-log` (for the `./storage/logs` directory) - stores local logs.
 
-Source code copies from app service.
+The following services will be started during deployment:
+- `nginx` - HTTP server.
+- `php-fpm` - PHP-FPM server.
+- `supervisor` - is a service that allows running background processes.
+- `redis` - Redis server.
 
-### Supervisor (supervisor)
-Supervisor process control system need for:
-- execution scheduled tasks (https://laravel.com/docs/9.x/scheduling#introduction)
-- execution queueable jobs & listeners via horizon (https://laravel.com/docs/9.x/queues#main-content)
+This environment is configured for automatic integration with the deployed Traefik. This means that, upon project startup, it will automatically be proxied through Traefik. The Traefik configuration will be described separately.
 
-Documentation: https://laravel.com/docs/9.x/horizon#supervisors
+### GitLab CI Environment
+his environment is used for deployment on the server through GitLab CI mechanisms.
 
-### PostgreSQL (postgres)
-PostgreSQL is open source object-relational database system
+CI initialization is performed using the `./gitlab-ci.yml` file. The principle is similar to the previous deployment type, but the following docker-compose files are used:
+- `docker-compose.yml`
+- `docker-compose.ci.yml`
 
-### Redis (redis)
-In-memory data store. Uses as storage for:
-- php sessions
-- laravel cache
-- queueable jobs & listeners (for execute it later by horizon)
+## Configuration
 
-### Memcached (memcached)
-In-memory data store. Uses as storage for operation, that need fast runtime (mutex, for example)
+### Setting Up the Main Service
+The `./docker/docker-compose.yml` file describes the platform service. Other containers inherit from this service. 
 
-### MinIO (minio)
-MinIO offers high-performance, S3 compatible object storage. 
+If necessary, you can modify the following configurations:
+- TZ — the time zone of the container OS. By default, it is taken from the `.env` file.
+- INSTALL_BCMATH — flag to install the PHP `bcmath` extension.
+- INSTALL_PHPREDIS — flag to install the PHP `redis` extension.
+- INSTALL_OPCACHE — flag to install the PHP `opcache` extension.
+- INSTALL_IMAGEMAGICK — flag to install the PHP `imagick` extension.
+- INSTALL_EXIF — flag to install the PHP `exif` extension.
+- INSTALL_PCNTL — flag to install the PHP `pcntl` extension.
+- INSTALL_INTL — flag to install the PHP `intl` extension.
+- INSTALL_SOAP — flag to install the PHP `soap` extension.
+- INSTALL_PGSQL — flag to install the PHP `pgsql` and `pdo_pgsql` extensions.
+- INSTALL_MYSQL — flag to install the PHP `pdo_mysql` extension.
+- INSTALL_GETTEXT — flag to install the PHP `gettext` extension.
+- INSTALL_SOCKETS — flag to install the PHP `sockets` extension.
+- INSTALL_MEMCACHED — flag to install the PHP `memcached` extension.
+- INSTALL_PECL_SYNC — flag to install the PHP `sync` extension.
+- INSTALL_PECL_MONGODB — flag to install the PHP `mongodb` extension.
+- OPENSSL_ENABLE_GOST_SUPPORT - flag for enable OpenSSL GOST provider support
 
-It uses as primary storage for user files (for replace local project storage).
+### Local Environment
 
-We can't store files in project file structure because it drops on rebuild containers. We need share files between nginx, php-fpm, php-cli & supervisor services. Using volumes is not good idea. As volume  replacement i using this storage.
-
-Documentation: https://docs.min.io/
-
-### MinIO installation service (minio-install)
-This is service, that starts only on installation. It configures MinIO, creates users, creates and configures default buckets
-
-Documentation: https://docs.min.io/
-
-### Imaginary (imaginary)
-Fast HTTP microservice for high-level image processing. I use it to process custom images. It allows you to manipulate images and convert them from one format to another.
-
-Project repository: https://github.com/h2non/imaginary
-
-## Env files
-### Docker env (docker/.env)
-```angular2html
-COMPOSE_PROJECT_NAME=example-app # name of current project.
-TIMEZONE=Europe/Moscow # system time zone of the services
-OPTIMIZE_PUBLIC_IMAGES=true # flag for optimize public images (in public folder)
-
-### Nginx #################################################
-NGINX_HOST_IP=0.0.0.0 # binding ip address of nginx service
-NGINX_HOST_PORT=81 # binding port of nginx service
-NGINX_TRAEFIK_DOMAIN=example.com # Traefik label: public domain
-NGINX_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https # Traefik label: allowed protocols
-NGINX_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
-NGINX_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
-NGINX_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
-
-### PostgreSQL #################################################
-POSTGRES_HOST_IP=0.0.0.0 # binding ip address of PostgreSQL service
-POSTGRES_HOST_PORT=54321 # binding port of PostgreSQL service
-POSTGRES_DB=default # the database that will be created at the first launch
-POSTGRES_USER=default # user of default database
-POSTGRES_PASSWORD=secret # password of user
-
-### PHP Settings #################################################
-INSTALL_PHP_EXT_BCMATH=true # flag for install bcmath php extension
-INSTALL_PHP_EXT_PHPREDIS=true # flag for install redis php extension
-INSTALL_PHP_EXT_OPCACHE=true # flag for install opcache php extension
-INSTALL_PHP_EXT_IMAGEMAGICK=false # flag for install imagemagick php extension
-INSTALL_PHP_EXT_EXIF=false # flag for install exif php extension
-INSTALL_PHP_EXT_PCNTL=true  # flag for install pcntl php extension
-INSTALL_PHP_EXT_INTL=false  # flag for install intl php extension
-INSTALL_PHP_EXT_SOAP=false  # flag for install soap php extension
-INSTALL_PHP_EXT_PGSQL=true  # flag for install pgsql & pdo_pgsql php extensions
-INSTALL_PHP_EXT_MYSQL=false # flag for install pdo_mysql php extension
-INSTALL_PHP_EXT_GETTEXT=false # flag for install gettext php extension
-INSTALL_PHP_EXT_SOCKETS=false # flag for install sockets php extension
-INSTALL_PHP_EXT_MEMCACHED=true # flag for install memcached php extension
-
-### NodeJS Settings #################################################
-INSTALL_NODE=true  # flag for install NodeJS
-NODE_VERSION=node # version of installation NodeJS
-INSTALL_NPM_GULP=true # flag for install gulp
-INSTALL_NPM_BOWER=false # flag for install bower
-INSTALL_NPM_VUE_CLI=true # flag for install vue-cli
-INSTALL_NPM_ANGULAR_CLI=false # flag for install angular-cli
-NPM_REGISTRY= # custom NPM registry url
-NPM_FETCH_RETRIES=2 # npm config
-NPM_FETCH_RETRY_FACTOR=10 # npm config
-NPM_FETCH_RETRY_MINTIMEOUT=10000 # npm config
-NPM_FETCH_RETRY_MAXTIMEOUT=60000 # npm config
-NVM_NODEJS_ORG_MIRROR= # url of nodejs mirror
-
-### Minio Settings ###################################################
-MINIO_API_HOST_IP=0.0.0.0 # binding ip address of MinIO service
-MINIO_API_HOST_PORT=9000 # binding port of MinIO service
-MINIO_CONSOLE_HOST_IP=0.0.0.0 # binding ip address of MinIO Admin service
-MINIO_CONSOLE_HOST_PORT=9001 # binding port of MinIO Admin service
-MINIO_ROOT_USER=minioadmin # root user of MinIO Admin service
-MINIO_ROOT_PASSWORD=minioadmin # password of root user
-MINIO_ACCESS_KEY=laravel # user for integration with Laravel
-MINIO_SECRET_KEY= # secret key of user (64 random characters)
-MINIO_TRAEFIK_DOMAIN=minio.example.com # Traefik label: public domain
-MINIO_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https  # Traefik label: allowed protocols
-MINIO_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
-MINIO_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
-MINIO_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
-
-### Imaginary Settings ###############################################
-IMAGINARY_HOST_IP=0.0.0.0  # binding ip address of Imaginary service
-IMAGINARY_HOST_PORT=9002 # binding port of Imaginary service
-IMAGINARY_ALLOWED_ORIGINS=http://minio:9000/ # Allowed remote urls
-IMAGINARY_TRAEFIK_DOMAIN=imaginary.example.com # Traefik label: public domain
-IMAGINARY_TRAEFIK_FRONTEND_ENTRY_POINTS=http,https # Traefik label: allowed protocols
-IMAGINARY_TREFIK_SSL_REDIRECT=true # Traefik label: redirect from http to https
-IMAGINARY_TRAEFIK_FORCE_SSL=true # Traefik label: force ssl header
-IMAGINARY_TRAEFIK_WEIGHT=1 # Traefik label: weight for balancer
-
-### Redis WebUI Settings #############################################
-REDIS_WEBUI_HOST_IP=0.0.0.0 # binding ip address of Redis Web UI service
-REDIS_WEBUI_HOST_POST=9987 # binding port of Redis Web UI service
-REDIS_WEBUI_USERNAME=admin # user for access to Web UI
-REDIS_WEBUI_PASSWORD=admin # password of user
-
-### PHP PG Admin Settings ############################################
-PHP_PG_ADMIN_HOST_IP=0.0.0.0 # binding ip address of PHP Pg Admin service
-PHP_PG_ADMIN_HOST_POST=8060 # binding port of PHP Pg Admin service
-```
-
-### Laravel env (.env)
-```angular2html
+In the project root, modify the following variables in the `.env` file:
+```text
 DB_CONNECTION=pgsql
-DB_HOST=postgres #internal link to docker service with PostgreSQL
+DB_HOST=postgres # connect to the deployed PostgreSQL server
 DB_PORT=5432
-DB_DATABASE=default # default database (defined in docker env in POSTGRES_DB variable)
-DB_USERNAME=default # default user (defined in docker env in POSTGRES_USER variable)
-DB_PASSWORD=secret # password of user (defined in docker env in POSTGRES_PASSWORD variable)
+DB_DATABASE=default
+DB_USERNAME=default
+DB_PASSWORD=secret
 
-CACHE_DRIVER=redis # store cache in redis
-FILESYSTEM_DRIVER=minio_private # minio private filesystem driver as default filesystem driver
-QUEUE_CONNECTION=redis # redis as default queue connection
-SESSION_DRIVER=redis # store sessions in redis
-
-MEMCACHED_HOST=memcached #internal link to docker service with Memcached
-
-REDIS_HOST=redis  # internal link to docker service with Redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MINIO_ACCESS_KEY_ID=laravel # MinIO user (defined in docker env in MINIO_ACCESS_KEY variable)
-MINIO_SECRET_ACCESS_KEY= # MinIO secret key (defined in docker env in MINIO_SECRET_KEY variable)
-MINIO_DEFAULT_REGION=us-east-1
-MINIO_USE_PATH_STYLE_ENDPOINT=true
-MINIO_ENDPOINT=http://minio:9000 # internal link to minio api webservice
-MINIO_BUCKET_PUBLIC=public
-MINIO_BUCKET_PUBLIC_URL=http://minio.example.com/public # public link to minio public bucket
-MINIO_BUCKET_PRIVATE=private
-MINIO_BUCKET_PRIVATE_URL=http://minio.example.com/private # public link to minio private bucket
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+CACHE_STORE=redis
+REDIS_HOST=redis # connect to the deployed Redis server
 ```
 
-## Deployment
-This projects has 2 sets of deployment scripts:
-- for local deployment
-- for production deployment
+In the `docker` directory, create the `.env` file (if not already created) (`./docker/.env`):
+```text
+COMPOSE_PROJECT_NAME=project-name # Project name
 
-Scripts:
-- bash.sh - connects to php-cli console. In console you can run artisan commands, install composer & npm packages
-- install.sh - installation script. It prepares deployment for use
-- migrate.sh - script for execute database migrations
-- start.sh - script starts services in daemon (background) mode
-- stop.sh - script stops ran services
-- update.sh - script rebuild the services
+TIMEZONE=Europe/Moscow # Server timezone
 
-### Notes for local deployment
-When deployed locally, the source code of the project is mounted in a container. This allows you to work on a project in real time without reassembling services.
+### Nginx #####################################################
+NGINX_HOST_IP=0.0.0.0 # IP of the deployed server. 0.0.0.0 — accessible from the network, 127.0.0.1 — accessible only locally
+NGINX_HOST_PORT=82 # Server port, use for simultaneous deployment of multiple environments
 
-#### Notes for production deployment.
-The product deployment differs from the local one in that Nginx, MinIO and Imaginary stops processing incoming requests coming to it through the port (stops listening to the host port).
-They start processing only the traffic coming from the load balancer. I use Traefik (https://traefik.io/traefik/) as a load balancer in the configuration of the hosts by labels.
+### PostgreSQL ################################################
+POSTGRES_HOST_IP=0.0.0.0 # IP of the deployed server. 0.0.0.0 — accessible from the network, 127.0.0.1 — accessible only locally
+POSTGRES_HOST_PORT=54322 # Server port, use for simultaneous deployment of multiple environments
+POSTGRES_DB=default # Default database name
+POSTGRES_USER=default # Database user
+POSTGRES_PASSWORD=secret # Database password
 
-Documentation: https://doc.traefik.io/traefik/routing/providers/service-by-label/
+### Containers ################################################
+CONTAINER_NAME_DELIMITER="-" #  Separator for image names. When building, Docker sometimes gives image names with "-", sometimes with "_". If you encounter an "Image not found" error during build, check the image names, the problem may lie in this variable
+```
 
-My configured Traefik service (with bind by labels and Letsencrypt): https://github.com/smskin/traefik
+After setting it up, you can run `./deploy/local/install.sh` to build the environment. Then, use `./deploy/local/start.sh` to start it.
 
-## Example of Laravel projects
-In this example, I proposed my own implementation of the modular (service) approach.
+### Production Environment
 
-Modules place in app/Modules directory.
-- Base module is named as Core. It has base classes, that will be extending later.
-- The ExampleModule shows an example of the implementation of the modular approach.
+In the project root, modify the following variables in the `.env` file:
+```text
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+CACHE_STORE=redis
+REDIS_HOST=redis # connect to the deployed Redis server
+```
 
-Basic idea:
-- Modules are facades hiding the implementation. The module contains public methods that can be called from outside the module.
-- Module has artisan commands, controllers, actions, requests, listeners, and events
-- Artisan commands can call only controllers of this module.
-- The module method can take as an argument only an instance of the BaseRequest object
-- The module method can call the controller
-- The controller can call another controller (of this module), action or event
+In the `docker` directory, create the `.env` file (if not already created) (`./docker/.env`):
+```text
+COMPOSE_PROJECT_NAME=project-name # Project name
 
-### Module components
-#### Command (Artisan command)
-- Artisan commands can't contain any business logic.
-- Artisan commands can call only controllers of this module.
+TIMEZONE=Europe/Moscow # Server timezone
 
-#### Requests
-- An object that allows you to pass something to the module method.
-- Request has validation rules
-- Request will be validated by rules on calling of controller (or manually by call the validate method)
+### Nginx #####################################################
+NGINX_TRAEFIK_DOMAIN=api.tg.starwords.ru # Project domain used for forwarding the domain to Traefik
 
-#### Controllers
-- Base execution class. It contains all business logic of module method
-- As an incoming argument, it gets an instance of the BaseRequest class
-- Controller can return some object in the result variable
-- Controller can call other controllers, actions and events. But only from this module.
+### Containers ################################################
+CONTAINER_NAME_DELIMITER="-" # Separator for image names. When building, Docker sometimes gives image names with "-", sometimes with "_". If you encounter an "Image not found" error during build, check the image names, the problem may lie in this variable
+```
 
-#### Actions
-- Atomic execution item. It execute only one business action.
-- It can't call any classes (excluding classes of external libraries that are necessary to perform this atomic action)
+After setting it up, you can run `./deploy/production/install.sh` to build the environment. Then, use `./deploy/production/start.sh` to start it.
+
+### GitLab CI Environment
+
+In the `gitlab-ci.yml` file, the build container arguments are specified:
+- TIMEZONE - the server's time zone.
+- CONTAINER_NAME_DELIMITER - separator for image names. When building, Docker sometimes gives image names with "-", sometimes with "_". If you encounter an "Image not found" error during build, check the image names, the problem may lie in this variable.
+
+In the `./docker/docker-compose.ci.yml` file, there is a block for passing variables `x-laravel-env`. This block is used to pass environment variables from the "GitLab CI/CD Variables" into the containers being started.
+
+The following format is used for the description: 
+`APP_NAME: ${LARAVEL_APP_NAME}` — reads as: put the contents of the GitLab variable `LARAVEL_APP_NAME` into the `APP_NAME` environment variable.
+
+You can extend this block with any variables you need.
+
+So, before deploying:
+- Describe all the variables used in the local `.env` file in the `x-laravel-env block`.
+- Populate the GitLab CI/CD Variables with the required variables.
+- Start the deployment.
+
+In this example, the following variables are used — don't forget to fill them in:
+- LARAVEL_APP_NAME
+- LARAVEL_APP_KEY
+- DOMAIN
+- LARAVEL_DB_CONNECTION
+- LARAVEL_DB_HOST
+- LARAVEL_DB_PORT
+- LARAVEL_DB_DATABASE
+- LARAVEL_DB_USERNAME
+- LARAVEL_DB_PASSWORD
+
+## Supervisor
+For the Supervisor configuration, I decided to describe a separate block. By default, Supervisor is only used for scheduled tasks.
+
+The configuration is located in the file `./docker/supervisor/conf/supervisor/conf.d/laravel.conf`.
+
+There is a commented block in the configuration that ensures the operation of the [`Horizon library`](https://laravel.com/docs/11.x/horizon). If you are using this library, uncomment the block and rebuild the `supervisor` image.
+
+## Traefik
+For project deployment, I prefer using the [Traefik load balancer](https://traefik.io).
+
+In the `./docker/traefik` directory, I have prepared a ready-made configuration, which:
+- Finds containers by label and automatically proxies traffic to them based on the configuration of these containers (i.e., the configuration is described in services, not in Traefik). This allows you to deploy Traefik once and never touch it again.
+- Automatically obtains and renews [Let’s Encrypt certificates](https://letsencrypt.org).
+
+Installation:
+- Copy the contents of the `./docker/traefik` directory to your server in any location.
+- Create a .env file based on `env.example` and change the `ADMIN_EMAIL` variable in it.
+- Run the command to create the network: `docker network create traefik-net`.
+- Run `docker compose up -d`.
+- You can check if it's working by visiting `http://{IP}:8080`.
+
+*Note: this build listens for containers in the `traefik-net` network. If the traffic is not proxied, check that the container is connected to the `traefik-net` network.*
+
+After successful configuration, edit the `docker-compose.yml`:
+- Change `--log.level=DEBUG` to `--log.level=ERROR`
+- Remove port forwarding `8080:8080` from the `ports` block.
+- Restart Traefik (`docker compose down && docker compose up -d`)
+
+## Adding to an Existing Project
+- Copy the `./deploy` and `./docker` directories into your project.
+- Copy the `gitlab-ci.yml` file.
+- Configure it as described above.
+- If the scripts in the `./deploy` directory don't run, give execution permissions by running `cd ./deploy/local && chmod +x *`.

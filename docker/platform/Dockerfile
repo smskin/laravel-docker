@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.2-fpm
 
 USER root
 
@@ -23,99 +23,6 @@ RUN curl -s http://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     mkdir /var/www/.composer && chown www-data:www-data -R /var/www/.composer && \
     mkdir /var/www/.config && chown www-data:www-data -R /var/www/.config
-
-###########################################################################
-# Node / NVM:
-###########################################################################
-
-# Check if NVM needs to be installed
-ARG NODE_VERSION=node
-ENV NODE_VERSION ${NODE_VERSION}
-ARG INSTALL_NODE=false
-ARG INSTALL_NPM_GULP=false
-ARG INSTALL_NPM_BOWER=false
-ARG INSTALL_NPM_VUE_CLI=false
-ARG INSTALL_NPM_ANGULAR_CLI=false
-ARG NPM_REGISTRY
-ENV NPM_REGISTRY ${NPM_REGISTRY}
-ARG NPM_FETCH_RETRIES
-ENV NPM_FETCH_RETRIES ${NPM_FETCH_RETRIES}
-ARG NPM_FETCH_RETRY_FACTOR
-ENV NPM_FETCH_RETRY_FACTOR ${NPM_FETCH_RETRY_FACTOR}
-ARG NPM_FETCH_RETRY_MINTIMEOUT
-ENV NPM_FETCH_RETRY_MINTIMEOUT ${NPM_FETCH_RETRY_MINTIMEOUT}
-ARG NPM_FETCH_RETRY_MAXTIMEOUT
-ENV NPM_FETCH_RETRY_MAXTIMEOUT ${NPM_FETCH_RETRY_MAXTIMEOUT}
-ENV NVM_DIR /home/www-data/.nvm
-ARG NVM_NODEJS_ORG_MIRROR
-ENV NVM_NODEJS_ORG_MIRROR ${NVM_NODEJS_ORG_MIRROR}
-
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    # Install nvm (A Node Version Manager)
-    mkdir -p $NVM_DIR && \
-    mkdir /var/www/.npm && chown www-data:www-data -R /var/www/.npm && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash \
-        && . $NVM_DIR/nvm.sh \
-        && nvm install ${NODE_VERSION} \
-        && nvm use ${NODE_VERSION} \
-        && nvm alias ${NODE_VERSION} \
-        && npm config set fetch-retries ${NPM_FETCH_RETRIES} \
-        && npm config set fetch-retry-factor ${NPM_FETCH_RETRY_FACTOR} \
-        && npm config set fetch-retry-mintimeout ${NPM_FETCH_RETRY_MINTIMEOUT} \
-        && npm config set fetch-retry-maxtimeout ${NPM_FETCH_RETRY_MAXTIMEOUT} \
-        && if [ ${NPM_REGISTRY} ]; then \
-        npm config set registry ${NPM_REGISTRY} \
-        ;fi \
-        && if [ ${INSTALL_NPM_GULP} = true ]; then \
-        npm install -g gulp \
-        ;fi \
-        && if [ ${INSTALL_NPM_BOWER} = true ]; then \
-        npm install -g bower \
-        ;fi \
-        && if [ ${INSTALL_NPM_VUE_CLI} = true ]; then \
-        npm install -g @vue/cli \
-        ;fi \
-        && if [ ${INSTALL_NPM_ANGULAR_CLI} = true ]; then \
-        npm install -g @angular/cli \
-        ;fi \
-        && ln -s `npm bin --global` /home/www-data/.node-bin \
-;fi
-
-# Wouldn't execute when added to the RUN statement in the above block
-# Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    echo "" >> ~/.bashrc && \
-    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc && \
-    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
-;fi
-
-
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    echo "" >> ~/.bashrc && \
-    echo 'export NVM_DIR="/home/www-data/.nvm"' >> ~/.bashrc && \
-    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
-;fi
-
-# Add PATH for node
-ENV PATH $PATH:/home/www-data/.node-bin
-
-# Make it so the node modules can be executed with 'docker-compose exec'
-# We'll create symbolic links into '/usr/local/bin'.
-RUN if [ ${INSTALL_NODE} = true ]; then \
-    find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
-    NODE_MODS_DIR="$NVM_DIR/versions/node/$(node -v)/lib/node_modules" && \
-    ln -s $NODE_MODS_DIR/bower/bin/bower /usr/local/bin/bower && \
-    ln -s $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp && \
-    ln -s $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm && \
-    ln -s $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx && \
-    ln -s $NODE_MODS_DIR/vue-cli/bin/vue /usr/local/bin/vue && \
-    ln -s $NODE_MODS_DIR/vue-cli/bin/vue-init /usr/local/bin/vue-init && \
-    ln -s $NODE_MODS_DIR/vue-cli/bin/vue-list /usr/local/bin/vue-list \
-;fi
-
-RUN if [ ${NPM_REGISTRY} ]; then \
-    . ~/.bashrc && npm config set registry ${NPM_REGISTRY} \
-;fi
 
 #####################################
 # PHP Zip:
@@ -275,12 +182,48 @@ RUN if [ ${INSTALL_MEMCACHED} = true ]; then \
 ;fi
 
 ###########################################################################
-# Install image optimizators:
+# Pecl Sync:
 ###########################################################################
-ARG OPTIMIZE_PUBLIC_IMAGES=false
 
-RUN if [ ${OPTIMIZE_PUBLIC_IMAGES} = true ]; then \
-     apt-get install -y jpegoptim optipng \
+ARG INSTALL_PECL_SYNC=false
+
+RUN if [ ${INSTALL_PECL_SYNC} = true ]; then \
+    pecl -q install sync && \
+    docker-php-ext-enable sync \
+;fi
+
+###########################################################################
+# Pecl MongoDB:
+###########################################################################
+
+ARG INSTALL_PECL_MONGODB=false
+
+RUN if [ ${INSTALL_PECL_MONGODB} = true ]; then \
+    apt-get install -y libcurl4-openssl-dev pkg-config libssl-dev && \
+    pecl -q install mongodb && \
+    docker-php-ext-enable mongodb \
+;fi
+
+###########################################################################
+# Enable OpenSSL GOST Support:
+###########################################################################
+ARG OPENSSL_ENABLE_GOST_SUPPORT=false
+
+RUN if [ ${OPENSSL_ENABLE_GOST_SUPPORT} = true ]; then \
+    apt-get install -y libengine-gost-openssl1.1 && \
+    sed -i '20i openssl_conf = openssl_def' /etc/ssl/openssl.cnf && \
+    echo "" >>/etc/ssl/openssl.cnf && \
+    echo "[openssl_def]" >>/etc/ssl/openssl.cnf && \
+    echo "engines = engine_section" >>/etc/ssl/openssl.cnf && \
+    echo "" >>/etc/ssl/openssl.cnf && \
+    echo "[engine_section]" >>/etc/ssl/openssl.cnf && \
+    echo "gost = gost_section" >>/etc/ssl/openssl.cnf && \
+    echo "" >> /etc/ssl/openssl.cnf && \
+    echo "[gost_section]" >>/etc/ssl/openssl.cnf && \
+    echo "engine_id = gost" >>/etc/ssl/openssl.cnf && \
+    echo "dynamic_path = /usr/lib/aarch64-linux-gnu/engines-1.1/gost.so" >>/etc/ssl/openssl.cnf && \
+    echo "default_algorithms = ALL" >>/etc/ssl/openssl.cnf && \
+    echo "CRYPT_PARAMS = id-Gost28147-89-CryptoPro-A-ParamSet" >>/etc/ssl/openssl.cnf \
 ;fi
 
 #####################################

@@ -9,7 +9,7 @@ return [
     |
     | Here you may specify the default filesystem disk that should be used
     | by the framework. The "local" disk, as well as a variety of cloud
-    | based disks are available to your application. Just store away!
+    | based disks are available to your application for file storage.
     |
     */
 
@@ -20,11 +20,11 @@ return [
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
-    | Here you may configure as many filesystem "disks" as you wish, and you
-    | may even configure multiple disks of the same driver. Defaults have
-    | been set up for each driver as an example of the required values.
+    | Below you may configure as many filesystem disks as necessary, and you
+    | may even configure multiple disks for the same driver. Examples for
+    | most supported storage drivers are configured here for reference.
     |
-    | Supported Drivers: "local", "ftp", "sftp", "s3"
+    | Supported drivers: "local", "ftp", "sftp", "s3"
     |
     */
 
@@ -32,7 +32,8 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app'),
+            'root' => storage_path('app/private'),
+            'serve' => true,
             'throw' => false,
         ],
 
@@ -56,30 +57,6 @@ return [
             'throw' => false,
         ],
 
-        'minio_private' => [
-            'driver' => 's3',
-            'key' => env('MINIO_ACCESS_KEY_ID'),
-            'secret' => env('MINIO_SECRET_ACCESS_KEY'),
-            'region' => env('MINIO_DEFAULT_REGION'),
-            'bucket' => env('MINIO_BUCKET_PRIVATE'),
-            'url' => env('MINIO_BUCKET_PRIVATE_URL'),
-            'temporary_url' => env('MINIO_BUCKET_PRIVATE_URL'),
-            'endpoint' => env('MINIO_ENDPOINT'),
-            'use_path_style_endpoint' => env('MINIO_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
-        ],
-
-        'minio_public' => [
-            'driver' => 's3',
-            'key' => env('MINIO_ACCESS_KEY_ID'),
-            'secret' => env('MINIO_SECRET_ACCESS_KEY'),
-            'region' => env('MINIO_DEFAULT_REGION'),
-            'bucket' => env('MINIO_BUCKET_PUBLIC'),
-            'url' => env('MINIO_BUCKET_PUBLIC_URL'),
-            'endpoint' => env('MINIO_ENDPOINT'),
-            'use_path_style_endpoint' => env('MINIO_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
-        ],
     ],
 
     /*

@@ -1,4 +1,4 @@
-ARG COMPOSE_PROJECT_NAME
+ARG APP_CONTAINER_NAME
 FROM nginx:latest as nginx
 
 #####################################
@@ -21,7 +21,7 @@ COPY ./conf/nginx/conf.d /etc/nginx/conf.d
 #####################################
 #  Copy sources:
 #####################################
-FROM ${COMPOSE_PROJECT_NAME}_app:latest as app
+FROM ${APP_CONTAINER_NAME} as app
 FROM nginx
 
 USER root

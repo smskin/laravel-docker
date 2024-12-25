@@ -1,36 +1,25 @@
-version: '2'
 services:
     platform:
         build:
             context: ./platform
             args:
                 - TZ=${TIMEZONE}
-                - INSTALL_BCMATH=${INSTALL_PHP_EXT_BCMATH}
-                - INSTALL_PHPREDIS=${INSTALL_PHP_EXT_PHPREDIS}
-                - INSTALL_OPCACHE=${INSTALL_PHP_EXT_OPCACHE}
-                - INSTALL_IMAGEMAGICK=${INSTALL_PHP_EXT_IMAGEMAGICK}
-                - INSTALL_EXIF=${INSTALL_PHP_EXT_EXIF}
-                - INSTALL_PCNTL=${INSTALL_PHP_EXT_PCNTL}
-                - INSTALL_INTL=${INSTALL_PHP_EXT_INTL}
-                - INSTALL_SOAP=${INSTALL_PHP_EXT_SOAP}
-                - INSTALL_PGSQL=${INSTALL_PHP_EXT_PGSQL}
-                - INSTALL_MYSQL=${INSTALL_PHP_EXT_MYSQL}
-                - INSTALL_GETTEXT=${INSTALL_PHP_EXT_GETTEXT}
-                - INSTALL_SOCKETS=${INSTALL_PHP_EXT_SOCKETS}
-                - INSTALL_MEMCACHED=${INSTALL_PHP_EXT_MEMCACHED}
-                - INSTALL_NODE=${INSTALL_NODE}
-                - NODE_VERSION=${NODE_VERSION}
-                - INSTALL_NPM_GULP=${INSTALL_NPM_GULP}
-                - INSTALL_NPM_BOWER=${INSTALL_NPM_BOWER}
-                - INSTALL_NPM_VUE_CLI=${INSTALL_NPM_VUE_CLI}
-                - INSTALL_NPM_ANGULAR_CLI=${INSTALL_NPM_ANGULAR_CLI}
-                - NPM_REGISTRY=${NPM_REGISTRY}
-                - NPM_FETCH_RETRIES=${NPM_FETCH_RETRIES}
-                - NPM_FETCH_RETRY_FACTOR=${NPM_FETCH_RETRY_FACTOR}
-                - NPM_FETCH_RETRY_MINTIMEOUT=${NPM_FETCH_RETRY_MINTIMEOUT}
-                - NPM_FETCH_RETRY_MAXTIMEOUT=${NPM_FETCH_RETRY_MAXTIMEOUT}
-                - NVM_NODEJS_ORG_MIRROR=${NVM_NODEJS_ORG_MIRROR}
-                - OPTIMIZE_PUBLIC_IMAGES=${OPTIMIZE_PUBLIC_IMAGES}
+                - INSTALL_BCMATH=false
+                - INSTALL_PHPREDIS=true
+                - INSTALL_OPCACHE=true
+                - INSTALL_IMAGEMAGICK=false
+                - INSTALL_EXIF=false
+                - INSTALL_PCNTL=true
+                - INSTALL_INTL=false
+                - INSTALL_SOAP=false
+                - INSTALL_PGSQL=true
+                - INSTALL_MYSQL=true
+                - INSTALL_GETTEXT=false
+                - INSTALL_SOCKETS=false
+                - INSTALL_MEMCACHED=false
+                - INSTALL_PECL_SYNC=false
+                - INSTALL_PECL_MONGODB=false
+                - OPENSSL_ENABLE_GOST_SUPPORT=false
         profiles:
             - install
     app:
@@ -38,46 +27,22 @@ services:
             context: './../'
             dockerfile: ./docker/app/Dockerfile
             args:
-                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
-                - INSTALL_NODE=${INSTALL_NODE}
-                - OPTIMIZE_PUBLIC_IMAGES=${OPTIMIZE_PUBLIC_IMAGES}
+                - PLATFORM_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}${CONTAINER_NAME_DELIMITER}platform:latest
         profiles:
             - install
         depends_on:
             - platform
-    php-cli:
-        build:
-            context: ./php-cli
-            args:
-                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
-        tty: true
-        depends_on:
-            - redis
-            - memcached
-            - minio
-            - postgres
-        links:
-            - redis
-            - memcached
-            - minio
-            - postgres
-        networks:
-            - local
     php-fpm:
         build:
             context: ./php-fpm
             args:
-                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+                - APP_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}${CONTAINER_NAME_DELIMITER}app:latest
         depends_on:
             - redis
-            - memcached
-            - minio
-            - postgres
         links:
             - redis
-            - memcached
-            - minio
-            - postgres
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         networks:
             - local
     nginx:
@@ -85,47 +50,25 @@ services:
             context: ./nginx
             args:
                 - TZ=${TIMEZONE}
-                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+                - APP_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}${CONTAINER_NAME_DELIMITER}app:latest
         depends_on:
             - php-fpm
-            - minio
-            - imaginary
         links:
             - php-fpm
-            - minio
-            - imaginary
         networks:
             - local
     supervisor:
         build:
             context: ./supervisor
             args:
-                - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+                - APP_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}${CONTAINER_NAME_DELIMITER}app:latest
+                - PLATFORM_CONTAINER_NAME=${COMPOSE_PROJECT_NAME}${CONTAINER_NAME_DELIMITER}platform:latest
         depends_on:
             - redis
-            - memcached
-            - minio
-            - postgres
         links:
             - redis
-            - memcached
-            - minio
-            - postgres
-        networks:
-            - local
-    postgres:
-        build:
-            context: ./postgres
-            args:
-                - POSTGRES_VERSION=alpine
-        volumes:
-            - postgres:/var/lib/postgresql/data
-        ports:
-            - ${POSTGRES_HOST_IP}:${POSTGRES_HOST_PORT}:5432
-        environment:
-            - POSTGRES_DB=${POSTGRES_DB}
-            - POSTGRES_USER=${POSTGRES_USER}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         networks:
             - local
     redis:
@@ -134,53 +77,8 @@ services:
             - redis:/data
         networks:
             - local
-    memcached:
-        image: memcached:latest
-        networks:
-            - local
-    minio:
-        image: minio/minio:latest
-        command: server --console-address ":9001" /data
-        environment:
-            - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-            - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-        volumes:
-            - minio:/data
-        networks:
-            - local
-    minio-install:
-        image: minio/mc
-        profiles:
-            - install
-        depends_on:
-            - minio
-        entrypoint: >
-            /bin/sh -c "
-            /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-            /usr/bin/mc mb myminio/public;
-            /usr/bin/mc policy set public myminio/public;
-            /usr/bin/mc policy download myminio/public;
-            /usr/bin/mc mb myminio/private;
-            /usr/bin/mc policy download myminio/private;
-            /usr/bin/mc admin user add myminio/ ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
-            /usr/bin/mc admin policy set myminio/ readwrite user=${MINIO_ACCESS_KEY};
-            exit 0;
-            "
-        links:
-            - minio
-        networks:
-            - local
-    imaginary:
-        image: h2non/imaginary:latest
-        command: -enable-url-source -http-cache-ttl 86400 -cors -allowed-origins ${IMAGINARY_ALLOWED_ORIGINS}
-        links:
-            - minio
-        networks:
-            - local
 networks:
     local:
         driver: bridge
 volumes:
     redis:
-    minio:
-    postgres:

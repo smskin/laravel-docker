@@ -1,5 +1,6 @@
-ARG COMPOSE_PROJECT_NAME
-FROM ${COMPOSE_PROJECT_NAME}_platform:latest as supervisor
+ARG PLATFORM_CONTAINER_NAME
+ARG APP_CONTAINER_NAME
+FROM ${PLATFORM_CONTAINER_NAME} as supervisor
 
 USER root
 
@@ -13,7 +14,7 @@ COPY ./conf/supervisor /etc/supervisor
 #####################################
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-FROM ${COMPOSE_PROJECT_NAME}_app:latest as app
+FROM ${APP_CONTAINER_NAME} as app
 FROM supervisor
 
 USER root

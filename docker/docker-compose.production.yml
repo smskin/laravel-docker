@@ -1,4 +1,3 @@
-version: '2'
 services:
   platform:
     labels:
@@ -6,12 +5,6 @@ services:
   app:
     labels:
       - traefik.enable=false
-  php-cli:
-    labels:
-      - traefik.enable=false
-    volumes:
-      - laravel-app:/var/www/html/storage/app
-      - laravel-log:/var/www/html/storage/logs
   php-fpm:
     restart: always
     labels:
@@ -23,18 +16,23 @@ services:
     restart: always
     labels:
       - traefik.enable=true
-      - traefik.domain=${NGINX_TRAEFIK_DOMAIN}
-      - traefik.backend=${COMPOSE_PROJECT_NAME}-nginx
-      - traefik.docker.network=webproxy
-      - traefik.frontend.entryPoints=${NGINX_TRAEFIK_FRONTEND_ENTRY_POINTS}
-      - traefik.port=80
-      - traefik.frontend.rule=Host:${NGINX_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLRedirect=${NGINX_TREFIK_SSL_REDIRECT}
-      - traefik.frontend.headers.SSLHost=${NGINX_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLForceHost=${NGINX_TRAEFIK_FORCE_SSL}
-      - traefik.weight=${NGINX_TRAEFIK_WEIGHT}
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+      - traefik.docker.network=traefik-net
+
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${NGINX_TRAEFIK_DOMAIN}`)
+
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.entrypoints=websecure
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.rule=Host(`${NGINX_TRAEFIK_DOMAIN}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.tls=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.tls.certresolver=myresolver
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.service=${COMPOSE_PROJECT_NAME}
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-secure.priority=2
+
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}-https-redirect
     networks:
-      - webproxy
+      - traefik-net
   supervisor:
     restart: always
     labels:
@@ -42,57 +40,13 @@ services:
     volumes:
       - laravel-app:/var/www/html/storage/app
       - laravel-log:/var/www/html/storage/logs
-  postgres:
-    restart: always
-    labels:
-      - traefik.enable=false
   redis:
     restart: always
     labels:
       - traefik.enable=false
-  memcached:
-    restart: always
-    labels:
-      - traefik.enable=false
-  minio:
-    restart: always
-    ports:
-      - ${MINIO_CONSOLE_HOST_IP}:${MINIO_CONSOLE_HOST_PORT}:9001
-    labels:
-      - traefik.enable=true
-      - traefik.domain=${MINIO_TRAEFIK_DOMAIN}
-      - traefik.backend=${COMPOSE_PROJECT_NAME}-minio
-      - traefik.docker.network=webproxy
-      - traefik.frontend.entryPoints=${MINIO_TRAEFIK_FRONTEND_ENTRY_POINTS}
-      - traefik.port=9000
-      - traefik.frontend.rule=Host:${MINIO_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLRedirect=${MINIO_TREFIK_SSL_REDIRECT}
-      - traefik.frontend.headers.SSLHost=${MINIO_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLForceHost=${MINIO_TRAEFIK_FORCE_SSL}
-      - traefik.weight=${MINIO_TRAEFIK_WEIGHT}
-    networks:
-      - local
-      - webproxy
-  imaginary:
-    restart: always
-    labels:
-      - traefik.enable=true
-      - traefik.domain=${IMAGINARY_TRAEFIK_DOMAIN}
-      - traefik.backend=${COMPOSE_PROJECT_NAME}-imaginary
-      - traefik.docker.network=webproxy
-      - traefik.frontend.entryPoints=${IMAGINARY_TRAEFIK_FRONTEND_ENTRY_POINTS}
-      - traefik.port=9000
-      - traefik.frontend.rule=Host:${IMAGINARY_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLRedirect=${IMAGINARY_TREFIK_SSL_REDIRECT}
-      - traefik.frontend.headers.SSLHost=${IMAGINARY_TRAEFIK_DOMAIN}
-      - traefik.frontend.headers.SSLForceHost=${IMAGINARY_TRAEFIK_FORCE_SSL}
-      - traefik.weight=${IMAGINARY_TRAEFIK_WEIGHT}
-    networks:
-      - local
-      - webproxy
 volumes:
   laravel-app:
   laravel-log:
 networks:
-  webproxy:
+  traefik-net:
     external: true
