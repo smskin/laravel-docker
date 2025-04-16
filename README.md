@@ -52,7 +52,7 @@ The following services will be started during deployment:
 This environment is configured for automatic integration with the deployed Traefik. This means that, upon project startup, it will automatically be proxied through Traefik. The Traefik configuration will be described separately.
 
 ### GitLab CI Environment
-his environment is used for deployment on the server through GitLab CI mechanisms.
+This environment is used for deployment on the server through GitLab CI mechanisms.
 
 CI initialization is performed using the `./gitlab-ci.yml` file. The principle is similar to the previous deployment type, but the following docker-compose files are used:
 - `docker-compose.yml`
