@@ -30,9 +30,9 @@ Build:
   stage: build
   script:
     - *clone-git-repository
-    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build platform
-    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build app
-    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --progress=plain build php-fpm nginx supervisor
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --project-name project-${CI_PROJECT_ID} --progress=plain build platform
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --project-name project-${CI_PROJECT_ID} --progress=plain build app
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --project-name project-${CI_PROJECT_ID} --progress=plain build php-fpm nginx supervisor
     - *drop-git-repository
   when: manual
 
@@ -40,7 +40,8 @@ Update:
   stage: update
   script:
     - *clone-git-repository
-    - docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
-    - docker compose -f docker-compose.yml -f docker-compose.ci.yml exec php-fpm php artisan migrate --force
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --project-name project-${CI_PROJECT_ID} up -d
+    - docker compose -f docker-compose.yml -f docker-compose.ci.yml --project-name project-${CI_PROJECT_ID} exec php-fpm php artisan migrate --force
     - *drop-git-repository
   needs: [ "Build" ]
+
