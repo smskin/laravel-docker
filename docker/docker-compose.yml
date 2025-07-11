@@ -41,6 +41,8 @@ services:
             - redis
         links:
             - redis
+        environment:
+            PGSSLCERT: "/tmp/postgresql.crt"
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
@@ -67,6 +69,8 @@ services:
             - redis
         links:
             - redis
+        environment:
+            PGSSLCERT: "/tmp/postgresql.crt"
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
