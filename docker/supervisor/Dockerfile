@@ -1,12 +1,13 @@
 ARG PLATFORM_CONTAINER_NAME
 ARG APP_CONTAINER_NAME
-FROM ${PLATFORM_CONTAINER_NAME} as supervisor
+FROM ${PLATFORM_CONTAINER_NAME} AS supervisor
 
 USER root
 
 RUN apt-get update && \
     apt-get install -y supervisor
 
+COPY ./conf/php/php.ini /usr/local/etc/php/php.ini
 COPY ./conf/supervisor /etc/supervisor
 
 #####################################
@@ -14,7 +15,7 @@ COPY ./conf/supervisor /etc/supervisor
 #####################################
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-FROM ${APP_CONTAINER_NAME} as app
+FROM ${APP_CONTAINER_NAME} AS app
 FROM supervisor
 
 USER root
