@@ -1,7 +1,6 @@
 stages:
   - Build
   - Deploy
-  - Update
 
 variables:
   GIT_STRATEGY: clone
